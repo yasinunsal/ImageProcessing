@@ -67,17 +67,28 @@ mainMenuButtons = []
 filtersArray = ['Prewitt', 'Farid', 'Meijering', 'Sato', 'Frangi', 'Hessian', 'Gaussian', 'Roberts', 'Sobel',
                 'Unsharp Mask']
 filterButtons = []
-transformsArray = ['Resize', 'Rotate', 'Swirl', 'Rescale', 'Warp']
+transformsArray = ['Resize', 'Rotate', 'Swirl', 'Rescale', 'Pyramid Reduce']
 transformButtons = []
 morphologiesArray = ['Thin', 'Area Opening', 'Area Closing', 'Diameter Opening', 'Diameter Closing', 'Erosion',
                      'Flood Fill',
                      'Black Top Hat', 'White Top Hat', 'Dilation']
 morphologyButtons = []
+resizeArray = ['Height','Height Entry', 'Width', 'Width Entry', 'Resize']
+resizeButtons = []
+rotateArray = ['Angle', 'Angle Entry', 'Rotate']
+rotateButtons = []
+swirlArray = ['Rotation', 'Rotation Entry', 'Strength', 'Strength Entry', 'Radius', 'Radius Entry', 'Swirl']
+swirlButtons = []
+rescaleArray = ['Scale', 'Scale Entry', 'Rescale']
+rescaleButtons = []
+pyramidReduceArray = ['Downscale', 'Downscale Entry', 'Pyramid Reduce']
+pyramidReduceButtons = []
 
 def LoadImage():
     try:
         file_path = filedialog.askopenfilename()
         global image
+
         image = Image.open(file_path)
         imageDisplayed = image
         global photoWidthDpi
@@ -169,19 +180,19 @@ def UnsharpMask():
     unsharp_mask_image = filters.unsharp_mask(image)
     LoadPhoto(unsharp_mask_image)
 
-def Resize():
-    print("Transform1")
+def ResizeImage():
+    print("Resize Image")
 
-def Rotate():
+def RotateImage():
     print("Transform2")
 
-def Swirl():
+def SwirlImage():
     print("Transform3")
 
-def Rescale():
+def RescaleImage():
     print("Transform4")
 
-def Warp():
+def PyramidReduceImage():
     print("Transform5")
 
 def Thin():
@@ -223,6 +234,51 @@ def Dilation():
     dilation_image = dilation(image)
     LoadPhoto(dilation_image)
 
+def Resize():
+    for i in mainMenuButtons:
+        i.grid_forget()
+    for x in range(len(resizeButtons)):
+        resizeButtons[x].grid(column=1, row=x)
+    backButton = ttk.Button(root, text="Back", width=15, command=lambda: [ForgetGrid(backButton, "resize")])
+    backButton.grid(column=1, row=10)
+
+def Rotate():
+    for i in mainMenuButtons:
+        i.grid_forget()
+    for x in range(len(rotateButtons)):
+        rotateButtons[x].grid(column=1, row=x)
+    backButton = ttk.Button(root, text="Back", width=15, command=lambda: [ForgetGrid(backButton, "rotate")])
+    backButton.grid(column=1, row=10)
+
+def Swirl():
+    for i in mainMenuButtons:
+        i.grid_forget()
+    for x in range(len(swirlButtons)):
+        swirlButtons[x].grid(column=1, row=x)
+    backButton = ttk.Button(root, text="Back", width=15, command=lambda: [ForgetGrid(backButton, "swirl")])
+    backButton.grid(column=1, row=10)
+
+def Rescale():
+    for i in mainMenuButtons:
+        i.grid_forget()
+    for x in range(len(rescaleButtons)):
+        rescaleButtons[x].grid(column=1, row=x)
+    backButton = ttk.Button(root, text="Back", width=15, command=lambda: [ForgetGrid(backButton, "rescale")])
+    backButton.grid(column=1, row=10)
+
+def PyramidReduce():
+    for i in mainMenuButtons:
+        i.grid_forget()
+    for x in range(len(pyramidReduceButtons)):
+        pyramidReduceButtons[x].grid(column=1, row=x)
+    backButton = ttk.Button(root, text="Back", width=15, command=lambda: [ForgetGrid(backButton, "pyramidReduce")])
+    backButton.grid(column=1, row=10)
+
+def BackButton():
+    global backButton
+    backButton = ttk.Button(root, text="Back", width=15)
+
+
 def Filter():
     for i in mainMenuButtons:
         i.grid_forget()
@@ -237,7 +293,7 @@ def Transform():
     for x in range(len(transformButtons)):
         transformButtons[x].grid(column=1, row=x)
     backButton = ttk.Button(root, text="Back", width=15, command=lambda: [ForgetGrid(backButton, "transform")])
-    backButton.grid(column=1, row=5)
+    backButton.grid(column=1, row=10)
 
 def Morphology():
     for i in mainMenuButtons:
@@ -251,14 +307,33 @@ def ForgetGrid(btn, processType):
     if (processType == "transform"):
         for i in transformButtons:
             i.grid_forget()
+        MainMenu()
     elif (processType == "filter"):
         for i in filterButtons:
             i.grid_forget()
+        MainMenu()
     elif (processType == "morphology"):
         for i in morphologyButtons:
             i.grid_forget()
+        MainMenu()
+    elif (processType == "resize"):
+        for i in resizeButtons:
+            i.grid_forget()
+    elif (processType == "rotate"):
+        for i in rotateButtons:
+            i.grid_forget()
+    elif (processType == "swirl"):
+        for i in swirlButtons:
+            i.grid_forget()
+    elif (processType == "rescale"):
+        for i in rescaleButtons:
+            i.grid_forget()
+    elif (processType == "pyramidReduce"):
+        for i in pyramidReduceButtons:
+            i.grid_forget()
     btn.grid_forget()
-    MainMenu()
+    backButton.grid_forget()
+
 
 def Construct():
     for x in range(len(mainMenu)):
@@ -310,8 +385,8 @@ def Construct():
             temp = ttk.Button(root, width=15, text=transformsArray[q], command=Swirl)
         elif transformsArray[q] == "Rescale":
             temp = ttk.Button(root, width=15, text=transformsArray[q], command=Rescale)
-        elif transformsArray[q] == "Warp":
-            temp = ttk.Button(root, width=15, text=transformsArray[q], command=Warp)
+        elif transformsArray[q] == "Pyramid Reduce":
+            temp = ttk.Button(root, width=15, text=transformsArray[q], command=PyramidReduce)
         temp.grid(column=1, row=q)
         transformButtons.append(temp)
         temp.grid_forget()
@@ -341,6 +416,73 @@ def Construct():
         morphologyButtons.append(temp)
         temp.grid_forget()
 
+    for p in range(len(resizeArray)):
+        if resizeArray[p] == "Height":
+            temp = ttk.Label(root, width=15, text=resizeArray[p])
+        elif resizeArray[p] == "Height Entry":
+            temp = ttk.Entry(root, width=15)
+        elif resizeArray[p] == "Width":
+            temp = ttk.Label(root, width=15, text=resizeArray[p])
+        elif resizeArray[p] == "Width Entry":
+            temp = ttk.Entry(root, width=15)
+        elif resizeArray[p] == "Resize":
+            temp = ttk.Button(root, width=15, text=resizeArray[p], command=ResizeImage)
+        temp.grid(column=1, row=p)
+        resizeButtons.append(temp)
+        temp.grid_forget()
+
+    for k in range(len(rotateArray)):
+        if rotateArray[k] == "Angle":
+            temp = ttk.Label(root, width=15, text=rotateArray[k])
+        elif rotateArray[k] == "Angle Entry":
+            temp = ttk.Entry(root, width=15)
+        elif rotateArray[k] == "Rotate":
+            temp = ttk.Button(root, width=15, text=rotateArray[k], command=RotateImage)
+        temp.grid(column=1, row=k)
+        rotateButtons.append(temp)
+        temp.grid_forget()
+
+    for l in range(len(swirlArray)):
+        if swirlArray[l] == "Rotation":
+            temp = ttk.Label(root, width=15, text=swirlArray[l])
+        elif swirlArray[l] == "Rotation Entry":
+            temp = ttk.Entry(root, width=15)
+        elif swirlArray[l] == "Strength":
+            temp = ttk.Label(root, width=15, text=swirlArray[l])
+        elif swirlArray[l] == "Strength Entry":
+            temp = ttk.Entry(root, width=15)
+        if swirlArray[l] == "Radius":
+            temp = ttk.Label(root, width=15, text=swirlArray[l])
+        elif swirlArray[l] == "Radius Entry":
+            temp = ttk.Entry(root, width=15)
+        elif swirlArray[l] == "Swirl":
+            temp = ttk.Button(root, width=15, text=swirlArray[l], command=SwirlImage)
+        temp.grid(column=1, row=l)
+        swirlButtons.append(temp)
+        temp.grid_forget()
+
+    for m in range(len(rescaleArray)):
+        if rescaleArray[m] == "Scale":
+            temp = ttk.Label(root, width=15, text=rescaleArray[m])
+        elif rescaleArray[m] == "Scale Entry":
+            temp = ttk.Entry(root, width=15)
+        elif rescaleArray[m] == "Rescale":
+            temp = ttk.Button(root, width=15, text=rescaleArray[m], command=RescaleImage)
+        temp.grid(column=1, row=m)
+        rescaleButtons.append(temp)
+        temp.grid_forget()
+
+    for n in range(len(pyramidReduceArray)):
+        if pyramidReduceArray[n] == "Downscale":
+            temp = ttk.Label(root, width=15, text=pyramidReduceArray[n])
+        elif pyramidReduceArray[n] == "Downscale Entry":
+            temp = ttk.Entry(root, width=15)
+        elif pyramidReduceArray[n] == "Pyramid Reduce":
+            temp = ttk.Button(root, width=15, text=pyramidReduceArray[n], command=PyramidReduceImage)
+        temp.grid(column=1, row=n)
+        pyramidReduceButtons.append(temp)
+        temp.grid_forget()
+
 def MainMenu():
     for x in range(len(mainMenuButtons)):
         mainMenuButtons[x].grid(column=1, row=x)
@@ -360,5 +502,6 @@ saveButton.place(x=740, y=450)
 
 Construct()
 MainMenu()
+BackButton()
 
 root.mainloop()
