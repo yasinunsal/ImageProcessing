@@ -47,9 +47,9 @@ root.geometry(f'{window_width}x{window_height}+{center_x}+{center_y}')
 root.resizable(False, False)
 
 # configure columns and rows
-root.columnconfigure(0, weight=3)
-root.columnconfigure(1, weight=1)
-root.columnconfigure(2, weight=3)
+root.columnconfigure(0, {'minsize': (window_width/7)*3})
+root.columnconfigure(1, {'minsize': (window_width/7)})
+root.columnconfigure(2, {'minsize': (window_width/7)*3})
 
 root.rowconfigure(0, weight=1)
 root.rowconfigure(1, weight=1)
@@ -93,8 +93,10 @@ pyramidReduceButtons = []
 def Click(entry, message):
     if (entry.get() == message):
         entry.delete(0, 'end')
-    if (message == "Angle"):
+    if (message == "Angle" or message == "Rotation" or message == "Strength" or message == "Radius" or message == "Scale"):
         entry.configure(validate="key", validatecommand=(entry.register(ValidationFloat), '%P'))
+    elif (message == "Scale"):
+        entry.configure(validate="key", validatecommand=(entry.register(ValidationRescale),  ))
     else:
         entry.configure(validate="key", validatecommand=(entry.register(Validation), '%P', '%d'))
 
@@ -128,13 +130,7 @@ def ValidationFloat(string):
                 and result is not None
                 and result.group(0) != ""))
 
-def ValidationRescale(string):
-    regex = re.compile(r"()?[0-9.]*$")
-    result = regex.match(string)
-    return (string == ""
-            or (string.count('.') <= 1
-                and result is not None
-                and result.group(0) != ""))
+
 def LoadImage():
     try:
         file_path = filedialog.askopenfilename()
@@ -162,7 +158,8 @@ def LoadImage():
 
         sign_image2.configure(image=photo)
         sign_image2.image = photo
-        sign_image2.grid(column=2, row=0, rowspan=11, ipadx=1, ipady=1)
+        sign_image2.grid(column=2, row=0, rowspan=11, columnspan=3, ipadx=1, ipady=1)
+
         ttk.Button(root, text='Save Image', width=17, command=LoadImage).place(x=735, y=450)
     except:
         pass
@@ -201,7 +198,7 @@ def LoadPhoto(img, h=0, w=0, type="Image", thresh=""):
     buf.close()
     print(photo.width())
     print(photo.height())
-    sign_image2.configure(image=photo)
+    sign_image2.configure(image=photo,)
     sign_image2.image = photo
     sign_image2.grid(column=2, row=0, rowspan=11, ipadx=1, ipady=1)
 
@@ -322,26 +319,21 @@ def Resize(height, width):
     LoadPhoto(resized_image, int(height), int(width))
 
 
-def Rotate():
-    print("Rotate")
+def Rotate(angle):
+    rotated_image = rotate(image, float(angle))
+    LoadPhoto(rotated_image)
 
 
-def Swirl():
-    for i in mainMenuButtons:
-        i.grid_forget()
-    for x in range(len(swirlButtons)):
-        swirlButtons[x].grid(column=1, row=x)
-    backButton = ttk.Button(root, text="Back", width=15, command=lambda: [ForgetGrid(backButton, "swirl")])
-    backButton.grid(column=1, row=10)
+def Swirl(rotation, strength, radius):
+    swirled_image = swirl(image, rotation=float(rotation), strength=float(strength), radius=float(radius))
+    LoadPhoto(swirled_image)
 
 
-def Rescale():
-    for i in mainMenuButtons:
-        i.grid_forget()
-    for x in range(len(rescaleButtons)):
-        rescaleButtons[x].grid(column=1, row=x)
-    backButton = ttk.Button(root, text="Back", width=15, command=lambda: [ForgetGrid(backButton, "rescale")])
-    backButton.grid(column=1, row=10)
+
+def Rescale(scale):
+    rescaled_image = rescale(image, scale=float(scale))
+    LoadPhoto(rescaled_image)
+
 
 
 def PyramidReduce():
@@ -406,8 +398,8 @@ def Construct():
 
     transformButtons.append(ttk.Button(root, width=17, text="Resize", command=lambda: ReplaceGrid(resizeButtons)))
     transformButtons.append(ttk.Button(root, width=17, text="Rotate", command=lambda: ReplaceGrid(rotateButtons)))
-    transformButtons.append(ttk.Button(root, width=17, text="Swirl", command=Swirl))
-    transformButtons.append(ttk.Button(root, width=17, text="Rescale", command=Rescale))
+    transformButtons.append(ttk.Button(root, width=17, text="Swirl", command=lambda: ReplaceGrid(swirlButtons)))
+    transformButtons.append(ttk.Button(root, width=17, text="Rescale", command=ReplaceGrid(rescaleButtons)))
     transformButtons.append(ttk.Button(root, width=17, text="Pyramid Reduce", command=PyramidReduce))
     transformButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(mainMenuButtons)))
 
@@ -437,8 +429,7 @@ def Construct():
 
     resizeButtons.append(heightEntry)
     resizeButtons.append(widthEntry)
-    resizeButtons.append(ttk.Button(root, width=17, text="Resize",
-                                    command=lambda: Resize(resizeButtons[0].get(), resizeButtons[1].get())))
+    resizeButtons.append(ttk.Button(root, width=17, text="Resize", command=lambda: Resize(resizeButtons[0].get(), resizeButtons[1].get())))
     resizeButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(transformButtons)))
 
     angleEntry = ttk.Entry(root, width=17)
@@ -450,35 +441,41 @@ def Construct():
     rotateButtons.append(ttk.Button(root, width=17, text="Rotate", command=lambda: Rotate(rotateButtons[0].get())))
     rotateButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(transformButtons)))
 
-    for l in range(len(swirlArray)):
-        if swirlArray[l] == "Rotation":
-            temp = ttk.Label(root, width=15, text=swirlArray[l])
-        elif swirlArray[l] == "Rotation Entry":
-            temp = ttk.Entry(root, width=15)
-        elif swirlArray[l] == "Strength":
-            temp = ttk.Label(root, width=15, text=swirlArray[l])
-        elif swirlArray[l] == "Strength Entry":
-            temp = ttk.Entry(root, width=15)
-        if swirlArray[l] == "Radius":
-            temp = ttk.Label(root, width=15, text=swirlArray[l])
-        elif swirlArray[l] == "Radius Entry":
-            temp = ttk.Entry(root, width=15)
-        elif swirlArray[l] == "Swirl":
-            temp = ttk.Button(root, width=15, text=swirlArray[l], command=SwirlImage)
-        temp.grid(column=1, row=l)
-        swirlButtons.append(temp)
-        temp.grid_forget()
+    rotationEntry = ttk.Entry(root, width=17)
+    rotationEntry.insert(0, "Rotation")
+    rotationEntry.bind("<FocusIn>", (lambda _: Click(rotationEntry, "Rotation")))
+    rotationEntry.bind("<FocusOut>", (lambda _: Leave(rotationEntry, "Rotation")))
+    rotationEntry.bind("<Unmap>", (lambda _: Unmap(rotationEntry, "Rotation")))
 
-    for m in range(len(rescaleArray)):
-        if rescaleArray[m] == "Scale":
-            temp = ttk.Label(root, width=15, text=rescaleArray[m])
-        elif rescaleArray[m] == "Scale Entry":
-            temp = ttk.Entry(root, width=15)
-        elif rescaleArray[m] == "Rescale":
-            temp = ttk.Button(root, width=15, text=rescaleArray[m], command=RescaleImage)
-        temp.grid(column=1, row=m)
-        rescaleButtons.append(temp)
-        temp.grid_forget()
+    strengthEntry = ttk.Entry(root, width=17)
+    strengthEntry.insert(0, "Strength")
+    strengthEntry.bind("<FocusIn>", (lambda _: Click(strengthEntry, "Strength")))
+    strengthEntry.bind("<FocusOut>", (lambda _: Leave(strengthEntry, "Strength")))
+    strengthEntry.bind("<Unmap>", (lambda _: Unmap(strengthEntry, "Strength")))
+
+    radiusEntry = ttk.Entry(root, width=17)
+    radiusEntry.insert(0, "Radius")
+    radiusEntry.bind("<FocusIn>", (lambda _: Click(radiusEntry, "Radius")))
+    radiusEntry.bind("<FocusOut>", (lambda _: Leave(radiusEntry, "Radius")))
+    radiusEntry.bind("<Unmap>", (lambda _: Unmap(radiusEntry, "Radius")))
+
+    swirlButtons.append(rotationEntry)
+    swirlButtons.append(strengthEntry)
+    swirlButtons.append(radiusEntry)
+    swirlButtons.append(ttk.Button(root, width=17, text="Swirl", command=lambda: Swirl(swirlButtons[0].get(), swirlButtons[1].get(), swirlButtons[2].get())))
+    swirlButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(transformButtons)))
+
+    scaleEntry = ttk.Entry(root, width=17)
+    scaleEntry.insert(0, "Scale")
+    scaleEntry.bind("<FocusIn>", (lambda _: Click(scaleEntry, "Scale")))
+    scaleEntry.bind("<FocusOut>", (lambda _: Leave(scaleEntry, "Scale")))
+    scaleEntry.bind("<Unmap>", (lambda _: Unmap(scaleEntry, "Scale")))
+
+    rescaleButtons.append(scaleEntry)
+    rescaleButtons.append(ttk.Button(root, width=17, text="Rescale", command=lambda: Rescale(rescaleButtons[0].get())))
+    rescaleButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(transformButtons)))
+
+
 
     for n in range(len(pyramidReduceArray)):
         if pyramidReduceArray[n] == "Downscale":
