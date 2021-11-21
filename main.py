@@ -12,7 +12,7 @@ from skimage import filters
 from skimage.morphology import thin, area_opening, area_closing, diameter_closing, diameter_opening, erosion, \
     flood_fill, black_tophat, white_tophat, dilation
 from skimage.filters import threshold_otsu
-from skimage.transform import resize, rotate, swirl, rescale, warp, SimilarityTransform
+from skimage.transform import resize, rotate, swirl, rescale, pyramid_reduce
 from skimage.exposure import rescale_intensity
 from PyQt5 import QtGui
 import matplotlib.pyplot as plt
@@ -93,10 +93,10 @@ pyramidReduceButtons = []
 def Click(entry, message):
     if (entry.get() == message):
         entry.delete(0, 'end')
-    if (message == "Angle" or message == "Rotation" or message == "Strength" or message == "Radius" or message == "Scale"):
+    if (message == "Angle" or message == "Rotation" or message == "Strength" or message == "Radius"):
         entry.configure(validate="key", validatecommand=(entry.register(ValidationFloat), '%P'))
-    elif (message == "Scale"):
-        entry.configure(validate="key", validatecommand=(entry.register(ValidationRescale),  ))
+    elif (message == "Scale" or message == "Downscale"):
+        entry.configure(validate="key", validatecommand=(entry.register(ValidationScale), '%P'))
     else:
         entry.configure(validate="key", validatecommand=(entry.register(Validation), '%P', '%d'))
 
@@ -127,6 +127,14 @@ def ValidationFloat(string):
     return (string == ""
             or (string.count('-') <= 1
                 and string.count('.') <= 1
+                and result is not None
+                and result.group(0) != ""))
+
+def ValidationScale(string):
+    regex = re.compile(r"()?[0-9.]*$")
+    result = regex.match(string)
+    return (string == ""
+            or (string.count('.') <= 1
                 and result is not None
                 and result.group(0) != ""))
 
@@ -253,18 +261,6 @@ def UnsharpMask():
     LoadPhoto(unsharp_mask_image)
 
 
-def SwirlImage():
-    print("Transform3")
-
-
-def RescaleImage():
-    print("Transform4")
-
-
-def PyramidReduceImage():
-    print("Transform5")
-
-
 def Thin():
     thin_image = thin(image)
     LoadPhoto(thin_image)
@@ -329,20 +325,14 @@ def Swirl(rotation, strength, radius):
     LoadPhoto(swirled_image)
 
 
-
 def Rescale(scale):
     rescaled_image = rescale(image, scale=float(scale))
     LoadPhoto(rescaled_image)
 
 
-
-def PyramidReduce():
-    for i in mainMenuButtons:
-        i.grid_forget()
-    for x in range(len(pyramidReduceButtons)):
-        pyramidReduceButtons[x].grid(column=1, row=x)
-    backButton = ttk.Button(root, text="Back", width=15, command=lambda: [ForgetGrid(backButton, "pyramidReduce")])
-    backButton.grid(column=1, row=10)
+def PyramidReduce(downscale):
+    pyramid_reduced_image = pyramid_reduce(image, downscale=float(downscale))
+    LoadPhoto(pyramid_reduced_image)
 
 
 def Histogram():
@@ -399,8 +389,8 @@ def Construct():
     transformButtons.append(ttk.Button(root, width=17, text="Resize", command=lambda: ReplaceGrid(resizeButtons)))
     transformButtons.append(ttk.Button(root, width=17, text="Rotate", command=lambda: ReplaceGrid(rotateButtons)))
     transformButtons.append(ttk.Button(root, width=17, text="Swirl", command=lambda: ReplaceGrid(swirlButtons)))
-    transformButtons.append(ttk.Button(root, width=17, text="Rescale", command=ReplaceGrid(rescaleButtons)))
-    transformButtons.append(ttk.Button(root, width=17, text="Pyramid Reduce", command=PyramidReduce))
+    transformButtons.append(ttk.Button(root, width=17, text="Rescale", command=lambda: ReplaceGrid(rescaleButtons)))
+    transformButtons.append(ttk.Button(root, width=17, text="Pyramid Reduce", command=lambda: ReplaceGrid(pyramidReduceButtons)))
     transformButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(mainMenuButtons)))
 
     morphologyButtons.append(ttk.Button(root, width=17, text="Thin", command=Thin))
@@ -475,18 +465,16 @@ def Construct():
     rescaleButtons.append(ttk.Button(root, width=17, text="Rescale", command=lambda: Rescale(rescaleButtons[0].get())))
     rescaleButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(transformButtons)))
 
+    downscaleEntry = ttk.Entry(root, width=17)
+    downscaleEntry.insert(0, "Downscale")
+    downscaleEntry.bind("<FocusIn>", (lambda _: Click(downscaleEntry, "Downscale")))
+    downscaleEntry.bind("<FocusOut>", (lambda _: Leave(downscaleEntry, "Downscale")))
+    downscaleEntry.bind("<Unmap>", (lambda _: Unmap(downscaleEntry, "Downscale")))
 
+    pyramidReduceButtons.append(downscaleEntry)
+    pyramidReduceButtons.append(ttk.Button(root, width=17, text="Pyramid Reduce", command=lambda: Rescale(pyramidReduceButtons[0].get())))
+    pyramidReduceButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(transformButtons)))
 
-    for n in range(len(pyramidReduceArray)):
-        if pyramidReduceArray[n] == "Downscale":
-            temp = ttk.Label(root, width=15, text=pyramidReduceArray[n])
-        elif pyramidReduceArray[n] == "Downscale Entry":
-            temp = ttk.Entry(root, width=15)
-        elif pyramidReduceArray[n] == "Pyramid Reduce":
-            temp = ttk.Button(root, width=15, text=pyramidReduceArray[n], command=PyramidReduceImage)
-        temp.grid(column=1, row=n)
-        pyramidReduceButtons.append(temp)
-        temp.grid_forget()
 
 
 def MainMenu():
