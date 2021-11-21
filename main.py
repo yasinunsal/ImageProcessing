@@ -22,6 +22,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
 import asyncio
 import copy
+import re
 
 root = tk.Tk()
 root.iconbitmap("process.ico")  # changed icon
@@ -92,7 +93,10 @@ pyramidReduceButtons = []
 def Click(entry, message):
     if (entry.get() == message):
         entry.delete(0, 'end')
-    entry.configure(validate="key", validatecommand=(entry.register(Validation),'%P','%d'))
+    if (message == "Angle"):
+        entry.configure(validate="key", validatecommand=(entry.register(ValidationFloat), '%P'))
+    else:
+        entry.configure(validate="key", validatecommand=(entry.register(Validation), '%P', '%d'))
 
 
 def Leave(entry, message):
@@ -107,17 +111,28 @@ def Unmap(entry, message):
     entry.delete(0, 'end')
     entry.insert(0, message)
 
-def Validation(inStr,acttyp):
-    if acttyp == '1': #insert
+
+def Validation(inStr, acttyp):
+    if acttyp == '1':  # insert
         if not inStr.isdigit():
             return False
     return True
+
+
+def ValidationFloat(string):
+    regex = re.compile(r"(\-)?[0-9.]*$")
+    result = regex.match(string)
+    return (string == ""
+            or (string.count('-') <= 1
+                and string.count('.') <= 1
+                and result is not None
+                and result.group(0) != ""))
+
 
 def LoadImage():
     try:
         file_path = filedialog.askopenfilename()
         global image
-
         image = Image.open(file_path)
         imageDisplayed = image
         global photoWidthDpi
@@ -142,23 +157,32 @@ def LoadImage():
         sign_image2.configure(image=photo)
         sign_image2.image = photo
         sign_image2.grid(column=2, row=0, rowspan=11, ipadx=1, ipady=1)
+        ttk.Button(root, text='Save Image', width=17, command=LoadImage).place(x=735, y=450)
     except:
         pass
 
 
-def LoadPhoto(img, h=0, w=0):
+def LoadPhoto(img, h=0, w=0, type="Image", thresh=""):
     # img = plt.imshow(img, cmap="gray")
-    if(h == 0 or w == 0):
+    if (h == 0 or w == 0):
         fig = plt.Figure(figsize=((photoWidth / photoWidthDpi), (photoHeight / photoHeightDpi)))
     else:
         fig = plt.Figure(figsize=((h / photoWidthDpi), (w / photoHeightDpi)))
-
     canvas = FigureCanvas(fig)
     ax = fig.add_subplot()
-    ax.imshow(img, cmap="gray")
-    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-    ax.axis('tight')
-    ax.axis('off')
+    if (type == "Histogram"):
+        ax.hist(img.ravel(), bins=256)
+        ax.set_title('Histogram')
+        ax.axvline(thresh, color='r')
+    elif (type == "Thresholded"):
+        ax.imshow(img, cmap='gray')
+        ax.set_title('Thresholded')
+    else:
+        ax.imshow(img, cmap="gray")
+    if (type != "Histogram"):
+        fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+        ax.axis('tight')
+        ax.axis('off')
     canvas.show()
     buf = io.BytesIO()
     fig.savefig(buf)
@@ -192,7 +216,7 @@ def Meijering():
 
 
 def Sato():
-    sato_image = filters.sato(image)
+    sato_image = filters.sato(image, mode='reflect')
     LoadPhoto(sato_image)
 
 
@@ -202,7 +226,7 @@ def Frangi():
 
 
 def Hessian():
-    hessian_image = filters.hessian(image)
+    hessian_image = filters.hessian(image, mode='reflect')
     LoadPhoto(hessian_image)
 
 
@@ -224,14 +248,6 @@ def Sobel():
 def UnsharpMask():
     unsharp_mask_image = filters.unsharp_mask(image)
     LoadPhoto(unsharp_mask_image)
-
-
-def ResizeImage():
-    print("Resize Image")
-
-
-def RotateImage():
-    print("Transform2")
 
 
 def SwirlImage():
@@ -300,14 +316,8 @@ def Resize(height, width):
     LoadPhoto(resized_image, int(height), int(width))
 
 
-
 def Rotate():
-    for i in mainMenuButtons:
-        i.grid_forget()
-    for x in range(len(rotateButtons)):
-        rotateButtons[x].grid(column=1, row=x)
-    backButton = ttk.Button(root, text="Back", width=15, command=lambda: [ForgetGrid(backButton, "rotate")])
-    backButton.grid(column=1, row=10)
+    print("Rotate")
 
 
 def Swirl():
@@ -337,6 +347,17 @@ def PyramidReduce():
     backButton.grid(column=1, row=10)
 
 
+def Histogram():
+    thresh = threshold_otsu(image)
+    LoadPhoto(image, type="Histogram", thresh=thresh)
+
+
+def Threshold():
+    thresh = threshold_otsu(image)
+    binary = image > thresh
+    LoadPhoto(binary, type="Thresholded")
+
+
 def ReplaceGrid(buttonArray):
     for widget in root.winfo_children():
         if (widget.winfo_class() != "Label"):
@@ -347,58 +368,62 @@ def ReplaceGrid(buttonArray):
 
     for x in range(len(buttonArray)):
         if ((buttonArray[x])['text'] == "Back"):
-            buttonArray[x].place(x=450, y=450)
+            buttonArray[x].place(x=443.3, y=450)
         else:
             buttonArray[x].grid(column=1, row=x)
 
+
 def Construct():
-
-    mainMenuButtons.append(ttk.Button(root, width=15, text="Filter", command=lambda: ReplaceGrid(filterButtons)))
-    mainMenuButtons.append(ttk.Button(root, width=15, text="Histogram", command=lambda: ReplaceGrid(histogramButtons)))
-    mainMenuButtons.append(ttk.Button(root, width=15, text="Transform", command=lambda: ReplaceGrid(transformButtons)))
+    mainMenuButtons.append(ttk.Button(root, width=17, text="Filter", command=lambda: ReplaceGrid(filterButtons)))
+    mainMenuButtons.append(ttk.Button(root, width=17, text="Histogram", command=lambda: ReplaceGrid(histogramButtons)))
+    mainMenuButtons.append(ttk.Button(root, width=17, text="Transform", command=lambda: ReplaceGrid(transformButtons)))
     mainMenuButtons.append(
-        ttk.Button(root, width=15, text="Rescale Intensity", command=lambda: ReplaceGrid(rescaleIntensityButtons)))
+        ttk.Button(root, width=16, text="Rescale Intensity", command=lambda: ReplaceGrid(rescaleIntensityButtons)))
     mainMenuButtons.append(
-        ttk.Button(root, width=15, text="Morphology", command=lambda: ReplaceGrid(morphologyButtons)))
+        ttk.Button(root, width=16, text="Morphology", command=lambda: ReplaceGrid(morphologyButtons)))
 
-    filterButtons.append(ttk.Button(root, width=15, text="Prewitt", command=Prewitt))
-    filterButtons.append(ttk.Button(root, width=15, text="Farid", command=Farid))
-    filterButtons.append(ttk.Button(root, width=15, text="Meijering", command=Meijering))
-    filterButtons.append(ttk.Button(root, width=15, text="Sato", command=Sato))
-    filterButtons.append(ttk.Button(root, width=15, text="Frangi", command=Frangi))
-    filterButtons.append(ttk.Button(root, width=15, text="Hessian", command=Hessian))
-    filterButtons.append(ttk.Button(root, width=15, text="Gaussian", command=Gaussian))
-    filterButtons.append(ttk.Button(root, width=15, text="Roberts", command=Roberts))
-    filterButtons.append(ttk.Button(root, width=15, text="Sobel", command=Sobel))
-    filterButtons.append(ttk.Button(root, width=15, text="Unsharp Mask", command=UnsharpMask))
-    filterButtons.append(ttk.Button(root, width=15, text="Back", command=lambda: ReplaceGrid(mainMenuButtons)))
+    histogramButtons.append(ttk.Button(root, width=17, text="Histogram", command=Histogram))
+    histogramButtons.append(ttk.Button(root, width=17, text="Threshold", command=Threshold))
+    histogramButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(mainMenuButtons)))
 
-    transformButtons.append(ttk.Button(root, width=15, text="Resize", command=lambda: ReplaceGrid(resizeButtons)))
-    transformButtons.append(ttk.Button(root, width=15, text="Rotate", command=Rotate))
-    transformButtons.append(ttk.Button(root, width=15, text="Swirl", command=Swirl))
-    transformButtons.append(ttk.Button(root, width=15, text="Rescale", command=Rescale))
-    transformButtons.append(ttk.Button(root, width=15, text="Pyramid Reduce", command=PyramidReduce))
-    transformButtons.append(ttk.Button(root, width=15, text="Back", command=lambda: ReplaceGrid(mainMenuButtons)))
+    filterButtons.append(ttk.Button(root, width=17, text="Prewitt", command=Prewitt))
+    filterButtons.append(ttk.Button(root, width=17, text="Farid", command=Farid))
+    filterButtons.append(ttk.Button(root, width=17, text="Meijering", command=Meijering))
+    filterButtons.append(ttk.Button(root, width=17, text="Sato", command=Sato))
+    filterButtons.append(ttk.Button(root, width=17, text="Frangi", command=Frangi))
+    filterButtons.append(ttk.Button(root, width=17, text="Hessian", command=Hessian))
+    filterButtons.append(ttk.Button(root, width=17, text="Gaussian", command=Gaussian))
+    filterButtons.append(ttk.Button(root, width=17, text="Roberts", command=Roberts))
+    filterButtons.append(ttk.Button(root, width=17, text="Sobel", command=Sobel))
+    filterButtons.append(ttk.Button(root, width=17, text="Unsharp Mask", command=UnsharpMask))
+    filterButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(mainMenuButtons)))
 
-    morphologyButtons.append(ttk.Button(root, width=15, text="Thin", command=Thin))
-    morphologyButtons.append(ttk.Button(root, width=15, text="Area Opening", command=AreaOpening))
-    morphologyButtons.append(ttk.Button(root, width=15, text="Area Closing", command=AreaClosing))
-    morphologyButtons.append(ttk.Button(root, width=15, text="Diameter Opening", command=DiameterOpening))
-    morphologyButtons.append(ttk.Button(root, width=15, text="Diameter Closing", command=DiameterClosing))
-    morphologyButtons.append(ttk.Button(root, width=15, text="Erosion", command=Erosion))
-    morphologyButtons.append(ttk.Button(root, width=15, text="Flood Fill", command=FloodFill))
-    morphologyButtons.append(ttk.Button(root, width=15, text="Black Top Hat", command=BlackTopHat))
-    morphologyButtons.append(ttk.Button(root, width=15, text="White Top Hat", command=WhiteTopHat))
-    morphologyButtons.append(ttk.Button(root, width=15, text="Dilation", command=Dilation))
-    morphologyButtons.append(ttk.Button(root, width=15, text="Back", command=lambda: ReplaceGrid(mainMenuButtons)))
+    transformButtons.append(ttk.Button(root, width=17, text="Resize", command=lambda: ReplaceGrid(resizeButtons)))
+    transformButtons.append(ttk.Button(root, width=17, text="Rotate", command=Rotate))
+    transformButtons.append(ttk.Button(root, width=17, text="Swirl", command=Swirl))
+    transformButtons.append(ttk.Button(root, width=17, text="Rescale", command=Rescale))
+    transformButtons.append(ttk.Button(root, width=17, text="Pyramid Reduce", command=PyramidReduce))
+    transformButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(mainMenuButtons)))
 
-    heightEntry = ttk.Entry(root, width=15)
+    morphologyButtons.append(ttk.Button(root, width=17, text="Thin", command=Thin))
+    morphologyButtons.append(ttk.Button(root, width=17, text="Area Opening", command=AreaOpening))
+    morphologyButtons.append(ttk.Button(root, width=17, text="Area Closing", command=AreaClosing))
+    morphologyButtons.append(ttk.Button(root, width=17, text="Diameter Opening", command=DiameterOpening))
+    morphologyButtons.append(ttk.Button(root, width=17, text="Diameter Closing", command=DiameterClosing))
+    morphologyButtons.append(ttk.Button(root, width=17, text="Erosion", command=Erosion))
+    morphologyButtons.append(ttk.Button(root, width=17, text="Flood Fill", command=FloodFill))
+    morphologyButtons.append(ttk.Button(root, width=17, text="Black Top Hat", command=BlackTopHat))
+    morphologyButtons.append(ttk.Button(root, width=17, text="White Top Hat", command=WhiteTopHat))
+    morphologyButtons.append(ttk.Button(root, width=17, text="Dilation", command=Dilation))
+    morphologyButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(mainMenuButtons)))
+
+    heightEntry = ttk.Entry(root, width=17)
     heightEntry.insert(0, "Height")
     heightEntry.bind("<FocusIn>", (lambda _: Click(heightEntry, "Height")))
     heightEntry.bind("<FocusOut>", (lambda _: Leave(heightEntry, "Height")))
     heightEntry.bind("<Unmap>", (lambda _: Unmap(heightEntry, "Height")))
 
-    widthEntry = ttk.Entry(root, width=15)
+    widthEntry = ttk.Entry(root, width=17)
     widthEntry.insert(0, "Width")
     widthEntry.bind("<FocusIn>", (lambda _: Click(widthEntry, "Width")))
     widthEntry.bind("<FocusOut>", (lambda _: Leave(widthEntry, "Width")))
@@ -406,19 +431,18 @@ def Construct():
 
     resizeButtons.append(heightEntry)
     resizeButtons.append(widthEntry)
-    resizeButtons.append(ttk.Button(root, width=15, text="Resize", command=lambda: Resize(resizeButtons[0].get(),resizeButtons[1].get())))
-    resizeButtons.append(ttk.Button(root, width=15, text="Back", command=lambda: ReplaceGrid(transformButtons)))
+    resizeButtons.append(ttk.Button(root, width=17, text="Resize",
+                                    command=lambda: Resize(resizeButtons[0].get(), resizeButtons[1].get())))
+    resizeButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(transformButtons)))
 
-    for k in range(len(rotateArray)):
-        if rotateArray[k] == "Angle":
-            temp = ttk.Label(root, width=15, text=rotateArray[k])
-        elif rotateArray[k] == "Angle Entry":
-            temp = ttk.Entry(root, width=15)
-        elif rotateArray[k] == "Rotate":
-            temp = ttk.Button(root, width=15, text=rotateArray[k], command=RotateImage)
-        temp.grid(column=1, row=k)
-        rotateButtons.append(temp)
-        temp.grid_forget()
+    angleEntry = ttk.Entry(root, width=17)
+    angleEntry.insert(0, "Angle")
+    angleEntry.bind("<FocusIn>", (lambda _: Click(angleEntry, "Angle")))
+    angleEntry.bind("<FocusOut>", (lambda _: Leave(angleEntry, "Angle")))
+    angleEntry.bind("<Unmap>", (lambda _: Unmap(angleEntry, "Angle")))
+    rotateButtons.append(angleEntry)
+    rotateButtons.append(ttk.Button(root, width=17, text="Rotate", command=lambda: Rotate(rotateButtons[0].get())))
+    rotateButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(transformButtons)))
 
     for l in range(len(swirlArray)):
         if swirlArray[l] == "Rotation":
@@ -467,20 +491,12 @@ def MainMenu():
         mainMenuButtons[x].grid(column=1, row=x)
 
 
-def Histogram():
-    print("Histogram")
-
-
 def RescaleIntensity():
     print("Rescale Intensity")
 
 
-(ttk.Button(root, text='Load Image', width=15, command=LoadImage)).place(x=165, y=450)
-# loadButton.place(x=165, y=450)
+(ttk.Button(root, text='Load Image', width=17, command=LoadImage)).place(x=160, y=450)
 
-saveButton = ttk.Button(root, text='Save', width=15, command=LoadImage)
-print(saveButton['text'])
-saveButton.place(x=740, y=450)
 
 Construct()
 MainMenu()
