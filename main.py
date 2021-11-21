@@ -128,7 +128,13 @@ def ValidationFloat(string):
                 and result is not None
                 and result.group(0) != ""))
 
-
+def ValidationRescale(string):
+    regex = re.compile(r"()?[0-9.]*$")
+    result = regex.match(string)
+    return (string == ""
+            or (string.count('.') <= 1
+                and result is not None
+                and result.group(0) != ""))
 def LoadImage():
     try:
         file_path = filedialog.askopenfilename()
@@ -399,7 +405,7 @@ def Construct():
     filterButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(mainMenuButtons)))
 
     transformButtons.append(ttk.Button(root, width=17, text="Resize", command=lambda: ReplaceGrid(resizeButtons)))
-    transformButtons.append(ttk.Button(root, width=17, text="Rotate", command=Rotate))
+    transformButtons.append(ttk.Button(root, width=17, text="Rotate", command=lambda: ReplaceGrid(rotateButtons)))
     transformButtons.append(ttk.Button(root, width=17, text="Swirl", command=Swirl))
     transformButtons.append(ttk.Button(root, width=17, text="Rescale", command=Rescale))
     transformButtons.append(ttk.Button(root, width=17, text="Pyramid Reduce", command=PyramidReduce))
