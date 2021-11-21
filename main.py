@@ -77,6 +77,7 @@ morphologiesArray = ['Thin', 'Area Opening', 'Area Closing', 'Diameter Opening',
                      'Flood Fill',
                      'Black Top Hat', 'White Top Hat', 'Dilation']
 morphologyButtons = []
+floodFillButtons = []
 rescaleIntensityButtons = []
 resizeArray = ['Height Entry', 'Width', 'Resize']
 resizeButtons = []
@@ -97,6 +98,9 @@ def Click(entry, message):
         entry.configure(validate="key", validatecommand=(entry.register(ValidationFloat), '%P'))
     elif (message == "Scale" or message == "Downscale"):
         entry.configure(validate="key", validatecommand=(entry.register(ValidationScale), '%P'))
+    elif (message == "Seed Point" or message == "Input Range" or message == "Output Range"):
+        entry.configure(validate="key", validatecommand=(entry.register(ValidationTuple), '%P'))
+
     else:
         entry.configure(validate="key", validatecommand=(entry.register(Validation), '%P', '%d'))
 
@@ -135,6 +139,14 @@ def ValidationScale(string):
     result = regex.match(string)
     return (string == ""
             or (string.count('.') <= 1
+                and result is not None
+                and result.group(0) != ""))
+
+def ValidationTuple(string):
+    regex = re.compile(r"()?[0-9,]*$")
+    result = regex.match(string)
+    return (string == ""
+            or (string.count(',') <= 1
                 and result is not None
                 and result.group(0) != ""))
 
@@ -291,8 +303,10 @@ def Erosion():
     LoadPhoto(erosion_image)
 
 
-def FloodFill():
-    print("Morphology7")
+def FloodFill(seedPoint, newValue):
+    seedPoint = tuple(map(int, seedPoint.split(',')))
+    flood_filled_image = flood_fill(image, seed_point=(seedPoint), new_value=newValue)
+    LoadPhoto(flood_filled_image)
 
 
 def BlackTopHat():
@@ -344,6 +358,12 @@ def Threshold():
     thresh = threshold_otsu(image)
     binary = image > thresh
     LoadPhoto(binary, type="Thresholded")
+
+def RescaleIntensity(inRange, outRange):
+    inRange = tuple(map(int, inRange.split(',')))
+    outRange = tuple(map(int, outRange.split(',')))
+    rescaled_intensity = rescale_intensity(image, in_range=inRange, out_range=outRange)
+    LoadPhoto(rescaled_intensity)
 
 
 def ReplaceGrid(buttonArray):
@@ -399,11 +419,29 @@ def Construct():
     morphologyButtons.append(ttk.Button(root, width=17, text="Diameter Opening", command=DiameterOpening))
     morphologyButtons.append(ttk.Button(root, width=17, text="Diameter Closing", command=DiameterClosing))
     morphologyButtons.append(ttk.Button(root, width=17, text="Erosion", command=Erosion))
-    morphologyButtons.append(ttk.Button(root, width=17, text="Flood Fill", command=FloodFill))
+    morphologyButtons.append(ttk.Button(root, width=17, text="Flood Fill", command=lambda: ReplaceGrid(floodFillButtons)))
     morphologyButtons.append(ttk.Button(root, width=17, text="Black Top Hat", command=BlackTopHat))
     morphologyButtons.append(ttk.Button(root, width=17, text="White Top Hat", command=WhiteTopHat))
     morphologyButtons.append(ttk.Button(root, width=17, text="Dilation", command=Dilation))
     morphologyButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(mainMenuButtons)))
+
+    seedPointEntry = ttk.Entry(root, width=17)
+    seedPointEntry.insert(0, "Seed Point")
+    seedPointEntry.bind("<FocusIn>", (lambda _: Click(seedPointEntry, "Seed Point")))
+    seedPointEntry.bind("<FocusOut>", (lambda _: Leave(seedPointEntry, "Seed Point")))
+    seedPointEntry.bind("<Unmap>", (lambda _: Unmap(seedPointEntry, "Seed Point")))
+
+    newValueEntry = ttk.Entry(root, width=17)
+    newValueEntry.insert(0, "New Value")
+    newValueEntry.bind("<FocusIn>", (lambda _: Click(newValueEntry, "New Value")))
+    newValueEntry.bind("<FocusOut>", (lambda _: Leave(newValueEntry, "New Value")))
+    newValueEntry.bind("<Unmap>", (lambda _: Unmap(newValueEntry, "New Value")))
+
+    floodFillButtons.append(seedPointEntry)
+    floodFillButtons.append(newValueEntry)
+    floodFillButtons.append(ttk.Button(root, width=17, text="Flood Fill",
+                                    command=lambda: FloodFill(floodFillButtons[0].get(), floodFillButtons[1].get())))
+    floodFillButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(morphologyButtons)))
 
     heightEntry = ttk.Entry(root, width=17)
     heightEntry.insert(0, "Height")
@@ -475,6 +513,22 @@ def Construct():
     pyramidReduceButtons.append(ttk.Button(root, width=17, text="Pyramid Reduce", command=lambda: Rescale(pyramidReduceButtons[0].get())))
     pyramidReduceButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(transformButtons)))
 
+    inRangeEntry = ttk.Entry(root, width=17)
+    inRangeEntry.insert(0, "Input Range")
+    inRangeEntry.bind("<FocusIn>", (lambda _: Click(inRangeEntry, "Input Range")))
+    inRangeEntry.bind("<FocusOut>", (lambda _: Leave(inRangeEntry, "Input Range")))
+    inRangeEntry.bind("<Unmap>", (lambda _: Unmap(inRangeEntry, "Input Range")))
+
+    outRangeEntry = ttk.Entry(root, width=17)
+    outRangeEntry.insert(0, "Output Range")
+    outRangeEntry.bind("<FocusIn>", (lambda _: Click(outRangeEntry, "Output Range")))
+    outRangeEntry.bind("<FocusOut>", (lambda _: Leave(outRangeEntry, "Output Range")))
+    outRangeEntry.bind("<Unmap>", (lambda _: Unmap(outRangeEntry, "Output Range")))
+
+    rescaleIntensityButtons.append(inRangeEntry)
+    rescaleIntensityButtons.append(outRangeEntry)
+    rescaleIntensityButtons.append(ttk.Button(root, width=17, text="Rescale Intensity", command=lambda: RescaleIntensity(rescaleIntensityButtons[0].get(), rescaleIntensityButtons[1].get())))
+    rescaleIntensityButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(mainMenuButtons)))
 
 
 def MainMenu():
@@ -482,8 +536,7 @@ def MainMenu():
         mainMenuButtons[x].grid(column=1, row=x)
 
 
-def RescaleIntensity():
-    print("Rescale Intensity")
+
 
 
 (ttk.Button(root, text='Load Image', width=17, command=LoadImage)).place(x=160, y=450)
