@@ -150,6 +150,23 @@ def ValidationTuple(string):
                 and result is not None
                 and result.group(0) != ""))
 
+def LoadAndProcess():
+    try:
+        file_path = filedialog.askopenfilename()
+
+    except:
+        pass
+
+def SaveImage():
+    try:
+        files = [('All files', '.*'),
+                     ('PNG', '.png'),
+                     ('JPG', '.jpg')
+                     ]
+        saveFile = filedialog.asksaveasfile(filetypes=files, mode="w", defaultextension=".jpg")
+        fig.savefig(saveFile.name)
+    except:
+        pass
 
 def LoadImage():
     try:
@@ -180,15 +197,18 @@ def LoadImage():
         sign_image2.image = photo
         sign_image2.grid(column=2, row=0, rowspan=11, columnspan=3, ipadx=1, ipady=1)
 
-        ttk.Button(root, text='Save Image', width=17, command=LoadImage).place(x=735, y=450)
+        ttk.Button(root, text='Save Image', width=17, command=SaveImage).place(x=735, y=450)
     except:
         pass
 
 
 def LoadPhoto(img, h=0, w=0, type="Image", thresh=""):
-    # img = plt.imshow(img, cmap="gray")
+    global fig
     if (h == 0 or w == 0):
-        fig = plt.Figure(figsize=((photoWidth / photoWidthDpi), (photoHeight / photoHeightDpi)))
+        if(type=="Histogram"):
+            fig = plt.Figure(figsize=(((photoWidth*1.25) / photoWidthDpi), (photoHeight / photoHeightDpi)))
+        else:
+            fig = plt.Figure(figsize=((photoWidth / photoWidthDpi), (photoHeight / photoHeightDpi)))
     else:
         fig = plt.Figure(figsize=((h / photoWidthDpi), (w / photoHeightDpi)))
     canvas = FigureCanvas(fig)
@@ -386,9 +406,10 @@ def Construct():
     mainMenuButtons.append(ttk.Button(root, width=17, text="Histogram", command=lambda: ReplaceGrid(histogramButtons)))
     mainMenuButtons.append(ttk.Button(root, width=17, text="Transform", command=lambda: ReplaceGrid(transformButtons)))
     mainMenuButtons.append(
-        ttk.Button(root, width=16, text="Rescale Intensity", command=lambda: ReplaceGrid(rescaleIntensityButtons)))
+        ttk.Button(root, width=17, text="Rescale Intensity", command=lambda: ReplaceGrid(rescaleIntensityButtons)))
     mainMenuButtons.append(
-        ttk.Button(root, width=16, text="Morphology", command=lambda: ReplaceGrid(morphologyButtons)))
+        ttk.Button(root, width=17, text="Morphology", command=lambda: ReplaceGrid(morphologyButtons)))
+    mainMenuButtons.append(ttk.Button(root, width=17, text="Video Processing", command=lambda: LoadAndProcess()))
 
     histogramButtons.append(ttk.Button(root, width=17, text="Histogram", command=Histogram))
     histogramButtons.append(ttk.Button(root, width=17, text="Threshold", command=Threshold))
