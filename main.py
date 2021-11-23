@@ -28,6 +28,7 @@ import cv2
 import cv2.cv2
 import numpy as np
 import threading
+import imageio
 
 
 root = tk.Tk()
@@ -39,6 +40,13 @@ window_height = 500
 
 sign_image = Label(root, bg="black")
 sign_image2 = Label(root, bg="black")
+
+imageFrame = tk.Frame(root)
+imageFrame2 = tk.Frame(root)
+imageFrame.grid(column=0, row=0, rowspan=11, ipadx=1, ipady=1)
+sign_video = tk.Label(imageFrame)
+imageFrame2.grid(column=2, row=0, rowspan=11, ipadx=1, ipady=1)
+sign_video2 = tk.Label(imageFrame2)
 
 # get the screen dimension
 screen_width = root.winfo_screenwidth()
@@ -156,39 +164,83 @@ def ValidationTuple(string):
                 and result is not None
                 and result.group(0) != ""))
 
+def RenderVideo():
+    if not cap.isOpened():
+        return
+    _, frame = cap.read()
+    if not _:
+        cap.release()
+        out.release()
+        return
+    #frame = cv2.flip(frame, 1)
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    img = Image.fromarray(rgb)
+    img.thumbnail(((1000 / 2.40), (800 / 2.40)))
+    thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                   cv2.THRESH_BINARY_INV, 11, 2)
+    out.write(thresh)
+    img2 = Image.fromarray(thresh)
+    img2.thumbnail(((1000 / 2.40), (800 / 2.40)))
+    imgtk = ImageTk.PhotoImage(image=img)
+    imgtk2 = ImageTk.PhotoImage(image=img2)
+    sign_video.imgtk = imgtk #Shows frame for display 1
+    sign_video.configure(image=imgtk)
+    sign_video.grid(column=0, row=0, rowspan=11, ipadx=1, ipady=1)
+    sign_video2.imgtk2 = imgtk2 #Shows frame for display 2
+    sign_video2.configure(image=imgtk2)
+    sign_video2.grid(column=2, row=0, rowspan=11, ipadx=1, ipady=1)
+    root.after(10, RenderVideo)
+
 def ProcessVideo():
     try:
         file_path = filedialog.askopenfilename(title="Select Video to Process")
+        imageFrame.grid(column=0, row=0, rowspan=11, ipadx=1, ipady=1)
+        imageFrame2.grid(column=2, row=0, rowspan=11, ipadx=1, ipady=1)
+        sign_image.grid_forget()
+        sign_image2.grid_forget()
+
         files = [('All files', '.*'),
                      ('AVI', '.avi')
                      ]
         time.sleep(.5)
         saveVideo = filedialog.asksaveasfile(filetypes=files, mode="w", defaultextension=".avi", title="Choose Save Location for the Processed Video")
-
         boolShow = 1
+        global cap
         cap = cv2.VideoCapture(file_path)
+        width = cap.get(3)
+        height = cap.get(4)
+        fps = cap.get(5)
 
-        out = cv2.VideoWriter(saveVideo.name, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 20, (640, 480), False)
+        global out
+        out = cv2.VideoWriter(saveVideo.name, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, (int(width), int(height)), False)
+        RenderVideo()
 
-        cv2.namedWindow('Frame', cv2.WINDOW_AUTOSIZE)
+        #messagebox.showinfo("Success", "Video is saved at the chosen location.")
+
+        """cv2.namedWindow('Frame', cv2.WINDOW_AUTOSIZE)
         cv2.cv2.moveWindow('Frame', 20, 20)
 
         cv2.namedWindow('Thresh', cv2.WINDOW_AUTOSIZE)
         cv2.cv2.moveWindow('Thresh', 670, 20)
-
         while (cap.isOpened()):
-
             ret, frame = cap.read()
             if not ret:
                 break
-
+            #frame = cv2.flip(frame,1)
             frame = cv2.resize(frame, (640, 480), fx=0, fy=0,
                                interpolation=cv2.INTER_CUBIC)
-
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            i = Image.fromarray(rgb)
+            imgtk = ImageTk.PhotoImage(image=i)
+            sign_image.imgtk = imgtk
+            sign_image.configure(image=imgtk)
+            sign_image.grid(column=0, row=0, rowspan=11, ipadx=1, ipady=1)
             if boolShow == 1:
                 cv2.imshow('Frame', frame)
 
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
 
             Thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
                                            cv2.THRESH_BINARY_INV, 11, 2)
@@ -197,16 +249,14 @@ def ProcessVideo():
                 cv2.imshow('Thresh', Thresh)
 
             # Thresh = Thresh.astype('uint8')
-            out.write(Thresh)
+            #out.write(Thresh)
 
             if cv2.waitKey(25) & 0xFF == ord('q'):
                 boolShow = 0
                 cv2.destroyAllWindows()
 
-        cap.release()
-        out.release()
         cv2.destroyAllWindows()
-        messagebox.showinfo("Success", "Video is saved at the chosen location.")
+        messagebox.showinfo("Success", "Video is saved at the chosen location.")"""
     except:
         pass
 def LoadAndProcess():
@@ -227,6 +277,10 @@ def SaveImage():
 def LoadImage():
     try:
         file_path = filedialog.askopenfilename(title="Select Image to Process")
+        sign_video.grid_forget()
+        sign_video2.grid_forget()
+        imageFrame.grid_forget()
+        imageFrame2.grid_forget()
         global image
         image = Image.open(file_path)
         imageDisplayed = image
@@ -294,7 +348,7 @@ def LoadPhoto(img, h=0, w=0, type="Image", thresh=""):
     buf.close()
     print(photo.width())
     print(photo.height())
-    sign_image2.configure(image=photo,)
+    sign_image2.configure(image=photo)
     sign_image2.image = photo
     sign_image2.grid(column=2, row=0, rowspan=11, ipadx=1, ipady=1)
 
@@ -421,6 +475,7 @@ def Rescale(scale):
 
 
 def PyramidReduce(downscale):
+    print(downscale)
     pyramid_reduced_image = pyramid_reduce(image, downscale=float(downscale))
     LoadPhoto(pyramid_reduced_image)
 
@@ -444,7 +499,7 @@ def RescaleIntensity(inRange, outRange):
 
 def ReplaceGrid(buttonArray):
     for widget in root.winfo_children():
-        if (widget.winfo_class() != "Label"):
+        if (widget.winfo_class() != "Label" and widget.winfo_class() != "Frame"):
             if (widget['text'] == "Back"):
                 widget.place_forget()
             else:
@@ -465,7 +520,7 @@ def Construct():
         ttk.Button(root, width=17, text="Rescale Intensity", command=lambda: ReplaceGrid(rescaleIntensityButtons)))
     mainMenuButtons.append(
         ttk.Button(root, width=17, text="Morphology", command=lambda: ReplaceGrid(morphologyButtons)))
-    mainMenuButtons.append(ttk.Button(root, width=17, text="Video Processing", command=lambda: LoadAndProcess()))
+    mainMenuButtons.append(ttk.Button(root, width=17, text="Video Processing", command=LoadAndProcess))
 
     histogramButtons.append(ttk.Button(root, width=17, text="Histogram", command=Histogram))
     histogramButtons.append(ttk.Button(root, width=17, text="Threshold", command=Threshold))
@@ -587,7 +642,7 @@ def Construct():
     downscaleEntry.bind("<Unmap>", (lambda _: Unmap(downscaleEntry, "Downscale")))
 
     pyramidReduceButtons.append(downscaleEntry)
-    pyramidReduceButtons.append(ttk.Button(root, width=17, text="Pyramid Reduce", command=lambda: Rescale(pyramidReduceButtons[0].get())))
+    pyramidReduceButtons.append(ttk.Button(root, width=17, text="Pyramid Reduce", command=lambda: PyramidReduce(pyramidReduceButtons[0].get())))
     pyramidReduceButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(transformButtons)))
 
     inRangeEntry = ttk.Entry(root, width=17)
