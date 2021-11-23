@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import *
+from tkinter import messagebox
 from PIL import Image, ImageTk, ImageOps
 from skimage import data, exposure, img_as_float
 from skimage import filters
@@ -23,6 +24,11 @@ import numpy as np
 import asyncio
 import copy
 import re
+import cv2
+import cv2.cv2
+import numpy as np
+import threading
+
 
 root = tk.Tk()
 root.iconbitmap("process.ico")  # changed icon
@@ -150,12 +156,62 @@ def ValidationTuple(string):
                 and result is not None
                 and result.group(0) != ""))
 
-def LoadAndProcess():
+def ProcessVideo():
     try:
-        file_path = filedialog.askopenfilename()
+        file_path = filedialog.askopenfilename(title="Select Video to Process")
+        files = [('All files', '.*'),
+                     ('AVI', '.avi')
+                     ]
+        time.sleep(.5)
+        saveVideo = filedialog.asksaveasfile(filetypes=files, mode="w", defaultextension=".avi", title="Choose Save Location for the Processed Video")
 
+        boolShow = 1
+        cap = cv2.VideoCapture(file_path)
+
+        out = cv2.VideoWriter(saveVideo.name, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 20, (640, 480), False)
+
+        cv2.namedWindow('Frame', cv2.WINDOW_AUTOSIZE)
+        cv2.cv2.moveWindow('Frame', 20, 20)
+
+        cv2.namedWindow('Thresh', cv2.WINDOW_AUTOSIZE)
+        cv2.cv2.moveWindow('Thresh', 670, 20)
+
+        while (cap.isOpened()):
+
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            frame = cv2.resize(frame, (640, 480), fx=0, fy=0,
+                               interpolation=cv2.INTER_CUBIC)
+
+            if boolShow == 1:
+                cv2.imshow('Frame', frame)
+
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            Thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                           cv2.THRESH_BINARY_INV, 11, 2)
+
+            if boolShow == 1:
+                cv2.imshow('Thresh', Thresh)
+
+            # Thresh = Thresh.astype('uint8')
+            out.write(Thresh)
+
+            if cv2.waitKey(25) & 0xFF == ord('q'):
+                boolShow = 0
+                cv2.destroyAllWindows()
+
+        cap.release()
+        out.release()
+        cv2.destroyAllWindows()
+        messagebox.showinfo("Success", "Video is saved at the chosen location.")
     except:
         pass
+def LoadAndProcess():
+        t1 = threading.Thread(target=ProcessVideo, name="Thread1")
+        t1.start()
 
 def SaveImage():
     try:
@@ -163,14 +219,14 @@ def SaveImage():
                      ('PNG', '.png'),
                      ('JPG', '.jpg')
                      ]
-        saveFile = filedialog.asksaveasfile(filetypes=files, mode="w", defaultextension=".jpg")
+        saveFile = filedialog.asksaveasfile(filetypes=files, mode="w", defaultextension=".jpg", title="Choose Save Location for the Processed Image")
         fig.savefig(saveFile.name)
     except:
         pass
 
 def LoadImage():
     try:
-        file_path = filedialog.askopenfilename()
+        file_path = filedialog.askopenfilename(title="Select Image to Process")
         global image
         image = Image.open(file_path)
         imageDisplayed = image
