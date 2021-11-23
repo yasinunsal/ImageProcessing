@@ -1,4 +1,3 @@
-# image_viewer.py
 import io
 import os
 import time
@@ -25,11 +24,9 @@ import asyncio
 import copy
 import re
 import cv2
-import cv2.cv2
 import numpy as np
 import threading
 import imageio
-
 
 root = tk.Tk()
 root.iconbitmap("process.ico")  # changed icon
@@ -61,9 +58,9 @@ root.geometry(f'{window_width}x{window_height}+{center_x}+{center_y}')
 root.resizable(False, False)
 
 # configure columns and rows
-root.columnconfigure(0, {'minsize': (window_width/7)*3})
-root.columnconfigure(1, {'minsize': (window_width/7)})
-root.columnconfigure(2, {'minsize': (window_width/7)*3})
+root.columnconfigure(0, {'minsize': (window_width / 7) * 3})
+root.columnconfigure(1, {'minsize': (window_width / 7)})
+root.columnconfigure(2, {'minsize': (window_width / 7) * 3})
 
 root.rowconfigure(0, weight=1)
 root.rowconfigure(1, weight=1)
@@ -76,32 +73,18 @@ root.rowconfigure(7, weight=1)
 root.rowconfigure(8, weight=1)
 root.rowconfigure(9, weight=1)
 root.rowconfigure(10, weight=3)
-# root.rowconfigure(11, weight=2)
 
-
-mainMenu = ['Filter', 'Histogram', 'Transform', 'Rescale Intensity', 'Morphology']
 mainMenuButtons = []
 histogramButtons = []
-filtersArray = ['Prewitt', 'Farid', 'Meijering', 'Sato', 'Frangi', 'Hessian', 'Gaussian', 'Roberts', 'Sobel',
-                'Unsharp Mask']
 filterButtons = []
-transformsArray = ['Resize', 'Rotate', 'Swirl', 'Rescale', 'Pyramid Reduce']
 transformButtons = []
-morphologiesArray = ['Thin', 'Area Opening', 'Area Closing', 'Diameter Opening', 'Diameter Closing', 'Erosion',
-                     'Flood Fill',
-                     'Black Top Hat', 'White Top Hat', 'Dilation']
 morphologyButtons = []
 floodFillButtons = []
 rescaleIntensityButtons = []
-resizeArray = ['Height Entry', 'Width', 'Resize']
 resizeButtons = []
-rotateArray = ['Angle', 'Angle Entry', 'Rotate']
 rotateButtons = []
-swirlArray = ['Rotation', 'Rotation Entry', 'Strength', 'Strength Entry', 'Radius', 'Radius Entry', 'Swirl']
 swirlButtons = []
-rescaleArray = ['Scale', 'Scale Entry', 'Rescale']
 rescaleButtons = []
-pyramidReduceArray = ['Downscale', 'Downscale Entry', 'Pyramid Reduce']
 pyramidReduceButtons = []
 
 
@@ -114,7 +97,6 @@ def Click(entry, message):
         entry.configure(validate="key", validatecommand=(entry.register(ValidationScale), '%P'))
     elif (message == "Seed Point" or message == "Input Range" or message == "Output Range"):
         entry.configure(validate="key", validatecommand=(entry.register(ValidationTuple), '%P'))
-
     else:
         entry.configure(validate="key", validatecommand=(entry.register(Validation), '%P', '%d'))
 
@@ -148,6 +130,7 @@ def ValidationFloat(string):
                 and result is not None
                 and result.group(0) != ""))
 
+
 def ValidationScale(string):
     regex = re.compile(r"()?[0-9.]*$")
     result = regex.match(string)
@@ -155,6 +138,7 @@ def ValidationScale(string):
             or (string.count('.') <= 1
                 and result is not None
                 and result.group(0) != ""))
+
 
 def ValidationTuple(string):
     regex = re.compile(r"()?[0-9,]*$")
@@ -164,6 +148,7 @@ def ValidationTuple(string):
                 and result is not None
                 and result.group(0) != ""))
 
+
 def RenderVideo():
     if not cap.isOpened():
         return
@@ -172,7 +157,6 @@ def RenderVideo():
         cap.release()
         out.release()
         return
-    #frame = cv2.flip(frame, 1)
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     img = Image.fromarray(rgb)
@@ -184,13 +168,14 @@ def RenderVideo():
     img2.thumbnail(((1000 / 2.40), (800 / 2.40)))
     imgtk = ImageTk.PhotoImage(image=img)
     imgtk2 = ImageTk.PhotoImage(image=img2)
-    sign_video.imgtk = imgtk #Shows frame for display 1
+    sign_video.imgtk = imgtk  # Shows frame for display 1
     sign_video.configure(image=imgtk)
     sign_video.grid(column=0, row=0, rowspan=11, ipadx=1, ipady=1)
-    sign_video2.imgtk2 = imgtk2 #Shows frame for display 2
+    sign_video2.imgtk2 = imgtk2  # Shows frame for display 2
     sign_video2.configure(image=imgtk2)
     sign_video2.grid(column=2, row=0, rowspan=11, ipadx=1, ipady=1)
     root.after(10, RenderVideo)
+
 
 def ProcessVideo():
     try:
@@ -201,11 +186,11 @@ def ProcessVideo():
         sign_image2.grid_forget()
 
         files = [('All files', '.*'),
-                     ('AVI', '.avi')
-                     ]
+                 ('AVI', '.avi')
+                 ]
         time.sleep(.5)
-        saveVideo = filedialog.asksaveasfile(filetypes=files, mode="w", defaultextension=".avi", title="Choose Save Location for the Processed Video")
-        boolShow = 1
+        saveVideo = filedialog.asksaveasfile(filetypes=files, mode="w", defaultextension=".avi",
+                                             title="Choose Save Location for the Processed Video")
         global cap
         cap = cv2.VideoCapture(file_path)
         width = cap.get(3)
@@ -213,66 +198,33 @@ def ProcessVideo():
         fps = cap.get(5)
 
         global out
-        out = cv2.VideoWriter(saveVideo.name, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, (int(width), int(height)), False)
+        out = cv2.VideoWriter(saveVideo.name, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps,
+                              (int(width), int(height)), False)
         RenderVideo()
 
-        #messagebox.showinfo("Success", "Video is saved at the chosen location.")
+        messagebox.showinfo("Success", "Video is saved at the chosen location.")
 
-        """cv2.namedWindow('Frame', cv2.WINDOW_AUTOSIZE)
-        cv2.cv2.moveWindow('Frame', 20, 20)
-
-        cv2.namedWindow('Thresh', cv2.WINDOW_AUTOSIZE)
-        cv2.cv2.moveWindow('Thresh', 670, 20)
-        while (cap.isOpened()):
-            ret, frame = cap.read()
-            if not ret:
-                break
-            #frame = cv2.flip(frame,1)
-            frame = cv2.resize(frame, (640, 480), fx=0, fy=0,
-                               interpolation=cv2.INTER_CUBIC)
-            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            i = Image.fromarray(rgb)
-            imgtk = ImageTk.PhotoImage(image=i)
-            sign_image.imgtk = imgtk
-            sign_image.configure(image=imgtk)
-            sign_image.grid(column=0, row=0, rowspan=11, ipadx=1, ipady=1)
-            if boolShow == 1:
-                cv2.imshow('Frame', frame)
-
-
-
-            Thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                           cv2.THRESH_BINARY_INV, 11, 2)
-
-            if boolShow == 1:
-                cv2.imshow('Thresh', Thresh)
-
-            # Thresh = Thresh.astype('uint8')
-            #out.write(Thresh)
-
-            if cv2.waitKey(25) & 0xFF == ord('q'):
-                boolShow = 0
-                cv2.destroyAllWindows()
-
-        cv2.destroyAllWindows()
-        messagebox.showinfo("Success", "Video is saved at the chosen location.")"""
     except:
         pass
+
+
 def LoadAndProcess():
-        t1 = threading.Thread(target=ProcessVideo, name="Thread1")
-        t1.start()
+    t1 = threading.Thread(target=ProcessVideo, name="Thread1")
+    t1.start()
+
 
 def SaveImage():
     try:
         files = [('All files', '.*'),
-                     ('PNG', '.png'),
-                     ('JPG', '.jpg')
-                     ]
-        saveFile = filedialog.asksaveasfile(filetypes=files, mode="w", defaultextension=".jpg", title="Choose Save Location for the Processed Image")
+                 ('PNG', '.png'),
+                 ('JPG', '.jpg')
+                 ]
+        saveFile = filedialog.asksaveasfile(filetypes=files, mode="w", defaultextension=".jpg",
+                                            title="Choose Save Location for the Processed Image")
         fig.savefig(saveFile.name)
     except:
         pass
+
 
 def LoadImage():
     try:
@@ -315,8 +267,8 @@ def LoadImage():
 def LoadPhoto(img, h=0, w=0, type="Image", thresh=""):
     global fig
     if (h == 0 or w == 0):
-        if(type=="Histogram"):
-            fig = plt.Figure(figsize=(((photoWidth*1.25) / photoWidthDpi), (photoHeight / photoHeightDpi)))
+        if (type == "Histogram"):
+            fig = plt.Figure(figsize=(((photoWidth * 1.25) / photoWidthDpi), (photoHeight / photoHeightDpi)))
         else:
             fig = plt.Figure(figsize=((photoWidth / photoWidthDpi), (photoHeight / photoHeightDpi)))
     else:
@@ -327,27 +279,22 @@ def LoadPhoto(img, h=0, w=0, type="Image", thresh=""):
         ax.hist(img.ravel(), bins=256)
         ax.set_title('Histogram')
         ax.axvline(thresh, color='r')
-    elif (type == "Thresholded"):
+    elif (type == "Threshold"):
         ax.imshow(img, cmap='gray')
-        ax.set_title('Thresholded')
+        ax.set_title('Threshold')
     else:
         ax.imshow(img, cmap="gray")
     if (type != "Histogram"):
         fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
         ax.axis('tight')
         ax.axis('off')
-    canvas.show()
     buf = io.BytesIO()
     fig.savefig(buf)
     buf.seek(0)
     openedImage = Image.open(buf)
-    # img = Image.fromarray(np.uint8(cm.gist_earth(img, bytes=True)))
-    # img = ImageOps.grayscale(img)
     openedImage.thumbnail((photoWidth, photoHeight))
     photo = ImageTk.PhotoImage(openedImage)
     buf.close()
-    print(photo.width())
-    print(photo.height())
     sign_image2.configure(image=photo)
     sign_image2.image = photo
     sign_image2.grid(column=2, row=0, rowspan=11, ipadx=1, ipady=1)
@@ -399,7 +346,7 @@ def Sobel():
 
 
 def UnsharpMask():
-    unsharp_mask_image = filters.unsharp_mask(image)
+    unsharp_mask_image = filters.unsharp_mask(image, radius=1, amount=2.0)
     LoadPhoto(unsharp_mask_image)
 
 
@@ -457,6 +404,7 @@ def Dilation():
 def Resize(height, width):
     resized_image = resize(image, (int(height), int(width)))
     LoadPhoto(resized_image, int(height), int(width))
+    print(resized_image.shape)
 
 
 def Rotate(angle):
@@ -475,20 +423,20 @@ def Rescale(scale):
 
 
 def PyramidReduce(downscale):
-    print(downscale)
     pyramid_reduced_image = pyramid_reduce(image, downscale=float(downscale))
     LoadPhoto(pyramid_reduced_image)
 
 
 def Histogram():
     thresh = threshold_otsu(image)
-    LoadPhoto(image, type="Histogram", thresh=thresh)
+    LoadPhoto(image, type="Histogram", thresh=str(thresh))
 
 
 def Threshold():
     thresh = threshold_otsu(image)
     binary = image > thresh
-    LoadPhoto(binary, type="Thresholded")
+    LoadPhoto(binary, type="Threshold")
+
 
 def RescaleIntensity(inRange, outRange):
     inRange = tuple(map(int, inRange.split(',')))
@@ -542,7 +490,8 @@ def Construct():
     transformButtons.append(ttk.Button(root, width=17, text="Rotate", command=lambda: ReplaceGrid(rotateButtons)))
     transformButtons.append(ttk.Button(root, width=17, text="Swirl", command=lambda: ReplaceGrid(swirlButtons)))
     transformButtons.append(ttk.Button(root, width=17, text="Rescale", command=lambda: ReplaceGrid(rescaleButtons)))
-    transformButtons.append(ttk.Button(root, width=17, text="Pyramid Reduce", command=lambda: ReplaceGrid(pyramidReduceButtons)))
+    transformButtons.append(
+        ttk.Button(root, width=17, text="Pyramid Reduce", command=lambda: ReplaceGrid(pyramidReduceButtons)))
     transformButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(mainMenuButtons)))
 
     morphologyButtons.append(ttk.Button(root, width=17, text="Thin", command=Thin))
@@ -551,7 +500,8 @@ def Construct():
     morphologyButtons.append(ttk.Button(root, width=17, text="Diameter Opening", command=DiameterOpening))
     morphologyButtons.append(ttk.Button(root, width=17, text="Diameter Closing", command=DiameterClosing))
     morphologyButtons.append(ttk.Button(root, width=17, text="Erosion", command=Erosion))
-    morphologyButtons.append(ttk.Button(root, width=17, text="Flood Fill", command=lambda: ReplaceGrid(floodFillButtons)))
+    morphologyButtons.append(
+        ttk.Button(root, width=17, text="Flood Fill", command=lambda: ReplaceGrid(floodFillButtons)))
     morphologyButtons.append(ttk.Button(root, width=17, text="Black Top Hat", command=BlackTopHat))
     morphologyButtons.append(ttk.Button(root, width=17, text="White Top Hat", command=WhiteTopHat))
     morphologyButtons.append(ttk.Button(root, width=17, text="Dilation", command=Dilation))
@@ -572,7 +522,7 @@ def Construct():
     floodFillButtons.append(seedPointEntry)
     floodFillButtons.append(newValueEntry)
     floodFillButtons.append(ttk.Button(root, width=17, text="Flood Fill",
-                                    command=lambda: FloodFill(floodFillButtons[0].get(), floodFillButtons[1].get())))
+                                       command=lambda: FloodFill(floodFillButtons[0].get(), floodFillButtons[1].get())))
     floodFillButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(morphologyButtons)))
 
     heightEntry = ttk.Entry(root, width=17)
@@ -589,7 +539,8 @@ def Construct():
 
     resizeButtons.append(heightEntry)
     resizeButtons.append(widthEntry)
-    resizeButtons.append(ttk.Button(root, width=17, text="Resize", command=lambda: Resize(resizeButtons[0].get(), resizeButtons[1].get())))
+    resizeButtons.append(ttk.Button(root, width=17, text="Resize",
+                                    command=lambda: Resize(resizeButtons[0].get(), resizeButtons[1].get())))
     resizeButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(transformButtons)))
 
     angleEntry = ttk.Entry(root, width=17)
@@ -622,7 +573,9 @@ def Construct():
     swirlButtons.append(rotationEntry)
     swirlButtons.append(strengthEntry)
     swirlButtons.append(radiusEntry)
-    swirlButtons.append(ttk.Button(root, width=17, text="Swirl", command=lambda: Swirl(swirlButtons[0].get(), swirlButtons[1].get(), swirlButtons[2].get())))
+    swirlButtons.append(ttk.Button(root, width=17, text="Swirl",
+                                   command=lambda: Swirl(swirlButtons[0].get(), swirlButtons[1].get(),
+                                                         swirlButtons[2].get())))
     swirlButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(transformButtons)))
 
     scaleEntry = ttk.Entry(root, width=17)
@@ -642,7 +595,8 @@ def Construct():
     downscaleEntry.bind("<Unmap>", (lambda _: Unmap(downscaleEntry, "Downscale")))
 
     pyramidReduceButtons.append(downscaleEntry)
-    pyramidReduceButtons.append(ttk.Button(root, width=17, text="Pyramid Reduce", command=lambda: PyramidReduce(pyramidReduceButtons[0].get())))
+    pyramidReduceButtons.append(
+        ttk.Button(root, width=17, text="Pyramid Reduce", command=lambda: PyramidReduce(pyramidReduceButtons[0].get())))
     pyramidReduceButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(transformButtons)))
 
     inRangeEntry = ttk.Entry(root, width=17)
@@ -659,8 +613,11 @@ def Construct():
 
     rescaleIntensityButtons.append(inRangeEntry)
     rescaleIntensityButtons.append(outRangeEntry)
-    rescaleIntensityButtons.append(ttk.Button(root, width=17, text="Rescale Intensity", command=lambda: RescaleIntensity(rescaleIntensityButtons[0].get(), rescaleIntensityButtons[1].get())))
-    rescaleIntensityButtons.append(ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(mainMenuButtons)))
+    rescaleIntensityButtons.append(ttk.Button(root, width=17, text="Rescale Intensity",
+                                              command=lambda: RescaleIntensity(rescaleIntensityButtons[0].get(),
+                                                                               rescaleIntensityButtons[1].get())))
+    rescaleIntensityButtons.append(
+        ttk.Button(root, width=17, text="Back", command=lambda: ReplaceGrid(mainMenuButtons)))
 
 
 def MainMenu():
@@ -668,11 +625,7 @@ def MainMenu():
         mainMenuButtons[x].grid(column=1, row=x)
 
 
-
-
-
 (ttk.Button(root, text='Load Image', width=17, command=LoadImage)).place(x=160, y=450)
-
 
 Construct()
 MainMenu()
