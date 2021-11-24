@@ -24,7 +24,6 @@ import asyncio
 import copy
 import re
 import cv2
-import numpy as np
 import threading
 import imageio
 
@@ -221,7 +220,7 @@ def SaveImage():
                  ]
         saveFile = filedialog.asksaveasfile(filetypes=files, mode="w", defaultextension=".jpg",
                                             title="Choose Save Location for the Processed Image")
-        fig.savefig(saveFile.name)
+        fig.savefig(saveFile.name, dpi=photoWidthDpi)
     except:
         pass
 
@@ -236,20 +235,20 @@ def LoadImage():
         global image
         image = Image.open(file_path)
         imageDisplayed = image
+        global photoWidth
+        photoWidth = image.width
+        global photoHeight
+        photoHeight = image.height
         global photoWidthDpi
         global photoHeightDpi
         try:
             photoWidthDpi, photoHeightDpi = image.info['dpi']
         except:
             photoWidthDpi = photoHeightDpi = 96
-        imageDisplayed.thumbnail(((1000 / 2.40), (800 / 2.40)))
         image = ImageOps.grayscale(image)
+        imageDisplayed.thumbnail(((1000 / 2.40), (800 / 2.40)))
         photo = ImageTk.PhotoImage(imageDisplayed)
         image = np.array(image, dtype=np.uint8)
-        global photoWidth
-        photoWidth = photo.width()
-        global photoHeight
-        photoHeight = photo.height()
 
         sign_image.configure(image=photo)
         sign_image.image = photo
@@ -291,8 +290,8 @@ def LoadPhoto(img, h=0, w=0, type="Image", thresh=""):
     buf = io.BytesIO()
     fig.savefig(buf)
     buf.seek(0)
-    openedImage = Image.open(buf)
-    openedImage.thumbnail((photoWidth, photoHeight))
+    openedImage = Image.open(buf, dpi=photoWidthDpi)
+    openedImage.thumbnail(((1000 / 2.40), (800 / 2.40)))
     photo = ImageTk.PhotoImage(openedImage)
     buf.close()
     sign_image2.configure(image=photo)
