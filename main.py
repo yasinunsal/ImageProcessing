@@ -1,5 +1,4 @@
 import io
-import os
 import time
 import tkinter as tk
 from tkinter import ttk
@@ -7,25 +6,18 @@ from tkinter import filedialog
 from tkinter import *
 from tkinter import messagebox
 from PIL import Image, ImageTk, ImageOps
-from skimage import data, exposure, img_as_float
 from skimage import filters
 from skimage.morphology import thin, area_opening, area_closing, diameter_closing, diameter_opening, erosion, \
     flood_fill, black_tophat, white_tophat, dilation
 from skimage.filters import threshold_otsu
 from skimage.transform import resize, rotate, swirl, rescale, pyramid_reduce
 from skimage.exposure import rescale_intensity
-from PyQt5 import QtGui
 import matplotlib.pyplot as plt
-from matplotlib import cm
-from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
-import asyncio
-import copy
 import re
 import cv2
 import threading
-import imageio
 
 root = tk.Tk()
 root.iconbitmap("process.ico")  # changed icon
@@ -123,7 +115,7 @@ def Validation(inStr, acttyp):
 
 
 def ValidationFloat(string):
-    regex = re.compile(r"(\-)?[0-9.]*$")
+    regex = re.compile(r"(-)?[0-9.]*$")
     result = regex.match(string)
     return (string == ""
             or (string.count('-') <= 1
@@ -133,7 +125,7 @@ def ValidationFloat(string):
 
 
 def ValidationScale(string):
-    regex = re.compile(r"()?[0-9.]*$")
+    regex = re.compile(r"[0-9.]*$")
     result = regex.match(string)
     return (string == ""
             or (string.count('.') <= 1
@@ -142,7 +134,7 @@ def ValidationScale(string):
 
 
 def ValidationTuple(string):
-    regex = re.compile(r"()?[0-9,]*$")
+    regex = re.compile(r"[0-9,]*$")
     result = regex.match(string)
     return (string == ""
             or (string.count(',') <= 1
@@ -196,12 +188,10 @@ def ProcessVideo():
             sign_image2.grid_forget()
             global image
             image = None
-            #global cap
             cap = cv2.VideoCapture(file_path)
             width = cap.get(3)
             height = cap.get(4)
             fps = cap.get(5)
-            #global out
             out = cv2.VideoWriter(saveVideo.name, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps,
                                   (int(width), int(height)), False)
             global renderQ
