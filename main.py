@@ -44,6 +44,8 @@ sign_video = tk.Label(imageFrame)
 imageFrame2.grid(column=2, row=0, rowspan=11, ipadx=1, ipady=1)
 sign_video2 = tk.Label(imageFrame2)
 
+renderQ = 0
+
 # get the screen dimension
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
@@ -148,13 +150,14 @@ def ValidationTuple(string):
                 and result.group(0) != ""))
 
 
-def RenderVideo():
+def RenderVideo(cap, out, q):
     if not cap.isOpened():
         return
     _, frame = cap.read()
     if not _:
         cap.release()
         out.release()
+        messagebox.showinfo("Success", "Video is saved at the chosen location.")
         return
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -165,51 +168,51 @@ def RenderVideo():
     out.write(thresh)
     img2 = Image.fromarray(thresh)
     img2.thumbnail(((1000 / 2.40), (800 / 2.40)))
-    imgtk = ImageTk.PhotoImage(image=img)
-    imgtk2 = ImageTk.PhotoImage(image=img2)
-    sign_video.imgtk = imgtk  # Shows frame for display 1
-    sign_video.configure(image=imgtk)
-    sign_video.grid(column=0, row=0, rowspan=11, ipadx=1, ipady=1)
-    sign_video2.imgtk2 = imgtk2  # Shows frame for display 2
-    sign_video2.configure(image=imgtk2)
-    sign_video2.grid(column=2, row=0, rowspan=11, ipadx=1, ipady=1)
-    root.after(10, RenderVideo)
+    if q == renderQ:
+        imgtk = ImageTk.PhotoImage(image=img)
+        imgtk2 = ImageTk.PhotoImage(image=img2)
+        sign_video.imgtk = imgtk  # Shows frame for display 1
+        sign_video.configure(image=imgtk)
+        sign_video.grid(column=0, row=0, rowspan=11, ipadx=1, ipady=1)
+        sign_video2.imgtk2 = imgtk2  # Shows frame for display 2
+        sign_video2.configure(image=imgtk2)
+        sign_video2.grid(column=2, row=0, rowspan=11, ipadx=1, ipady=1)
+    root.after(10, lambda: RenderVideo(cap, out, q))
 
 
 def ProcessVideo():
     try:
         file_path = filedialog.askopenfilename(title="Select Video to Process")
-        imageFrame.grid(column=0, row=0, rowspan=11, ipadx=1, ipady=1)
-        imageFrame2.grid(column=2, row=0, rowspan=11, ipadx=1, ipady=1)
-        sign_image.grid_forget()
-        sign_image2.grid_forget()
-
-        files = [('All files', '.*'),
-                 ('AVI', '.avi')
-                 ]
-        time.sleep(.5)
-        saveVideo = filedialog.asksaveasfile(filetypes=files, mode="w", defaultextension=".avi",
-                                             title="Choose Save Location for the Processed Video")
-        global cap
-        cap = cv2.VideoCapture(file_path)
-        width = cap.get(3)
-        height = cap.get(4)
-        fps = cap.get(5)
-
-        global out
-        out = cv2.VideoWriter(saveVideo.name, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps,
-                              (int(width), int(height)), False)
-        RenderVideo()
-
-        messagebox.showinfo("Success", "Video is saved at the chosen location.")
-
+        if file_path != '':
+            files = [('All files', '.*'),
+                     ('AVI', '.avi')
+                     ]
+            time.sleep(.5)
+            saveVideo = filedialog.asksaveasfile(filetypes=files, mode="w", defaultextension=".avi",
+                                                 title="Choose Save Location for the Processed Video")
+            imageFrame.grid(column=0, row=0, rowspan=11, ipadx=1, ipady=1)
+            imageFrame2.grid(column=2, row=0, rowspan=11, ipadx=1, ipady=1)
+            sign_image.grid_forget()
+            sign_image2.grid_forget()
+            global image
+            image = None
+            #global cap
+            cap = cv2.VideoCapture(file_path)
+            width = cap.get(3)
+            height = cap.get(4)
+            fps = cap.get(5)
+            #global out
+            out = cv2.VideoWriter(saveVideo.name, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps,
+                                  (int(width), int(height)), False)
+            global renderQ
+            renderQ = renderQ + 1
+            RenderVideo(cap, out, renderQ)
     except:
         pass
 
 
 def LoadAndProcess():
-    t1 = threading.Thread(target=ProcessVideo, name="Thread1")
-    t1.start()
+    threading.Thread(target=ProcessVideo).start()
 
 
 def SaveImage():
@@ -221,6 +224,7 @@ def SaveImage():
         saveFile = filedialog.asksaveasfile(filetypes=files, mode="w", defaultextension=".jpg",
                                             title="Choose Save Location for the Processed Image")
         fig.savefig(saveFile.name, dpi=photoWidthDpi)
+        messagebox.showinfo("Success", "Image is saved at the chosen location.")
     except:
         pass
 
@@ -288,9 +292,9 @@ def LoadPhoto(img, h=0, w=0, type="Image", thresh=""):
         ax.axis('tight')
         ax.axis('off')
     buf = io.BytesIO()
-    fig.savefig(buf)
+    fig.savefig(buf, dpi=photoWidthDpi)
     buf.seek(0)
-    openedImage = Image.open(buf, dpi=photoWidthDpi)
+    openedImage = Image.open(buf)
     openedImage.thumbnail(((1000 / 2.40), (800 / 2.40)))
     photo = ImageTk.PhotoImage(openedImage)
     buf.close()
@@ -300,149 +304,207 @@ def LoadPhoto(img, h=0, w=0, type="Image", thresh=""):
 
 
 def Prewitt():
-    prewitt_image = filters.prewitt(image)
-    LoadPhoto(prewitt_image)
-
+    try:
+        prewitt_image = filters.prewitt(image)
+        LoadPhoto(prewitt_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def Farid():
-    farid_image = filters.farid(image)
-    LoadPhoto(farid_image)
-
+    try:
+        farid_image = filters.farid(image)
+        LoadPhoto(farid_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def Meijering():
-    meijering_image = filters.meijering(image)
-    LoadPhoto(meijering_image)
-
+    try:
+        meijering_image = filters.meijering(image)
+        LoadPhoto(meijering_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def Sato():
-    sato_image = filters.sato(image, mode='reflect')
-    LoadPhoto(sato_image)
-
+    try:
+        sato_image = filters.sato(image, mode='reflect')
+        LoadPhoto(sato_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def Frangi():
-    frangi_image = filters.frangi(image)
-    LoadPhoto(frangi_image)
-
+    try:
+        frangi_image = filters.frangi(image)
+        LoadPhoto(frangi_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def Hessian():
-    hessian_image = filters.hessian(image, mode='reflect')
-    LoadPhoto(hessian_image)
-
+    try:
+        hessian_image = filters.hessian(image, mode='reflect')
+        LoadPhoto(hessian_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def Gaussian():
-    gaussian_image = filters.gaussian(image)
-    LoadPhoto(gaussian_image)
-
+    try:
+        gaussian_image = filters.gaussian(image)
+        LoadPhoto(gaussian_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def Roberts():
-    roberts_image = filters.roberts(image)
-    LoadPhoto(roberts_image)
-
+    try:
+        roberts_image = filters.roberts(image)
+        LoadPhoto(roberts_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def Sobel():
-    sobel_image = filters.sobel(image)
-    LoadPhoto(sobel_image)
+    try:
+        sobel_image = filters.sobel(image)
+        LoadPhoto(sobel_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 
 def UnsharpMask():
-    unsharp_mask_image = filters.unsharp_mask(image, radius=1, amount=2.0)
-    LoadPhoto(unsharp_mask_image)
+    try:
+        unsharp_mask_image = filters.unsharp_mask(image, radius=1, amount=2.0)
+        LoadPhoto(unsharp_mask_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 
 def Thin():
-    thin_image = thin(image)
-    LoadPhoto(thin_image)
-
+    try:
+        thin_image = thin(image)
+        LoadPhoto(thin_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def AreaOpening():
-    area_opening_image = area_opening(image)
-    LoadPhoto(area_opening_image)
-
+    try:
+        area_opening_image = area_opening(image)
+        LoadPhoto(area_opening_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def AreaClosing():
-    area_closing_image = area_closing(image)
-    LoadPhoto(area_closing_image)
-
+    try:
+        area_closing_image = area_closing(image)
+        LoadPhoto(area_closing_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def DiameterOpening():
-    diameter_opening_image = diameter_opening(image)
-    LoadPhoto(diameter_opening_image)
-
+    try:
+        diameter_opening_image = diameter_opening(image)
+        LoadPhoto(diameter_opening_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def DiameterClosing():
-    diameter_closing_image = diameter_closing(image)
-    LoadPhoto(diameter_closing_image)
-
+    try:
+        diameter_closing_image = diameter_closing(image)
+        LoadPhoto(diameter_closing_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def Erosion():
-    erosion_image = erosion(image)
-    LoadPhoto(erosion_image)
-
+    try:
+        erosion_image = erosion(image)
+        LoadPhoto(erosion_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def FloodFill(seedPoint, newValue):
-    seedPoint = tuple(map(int, seedPoint.split(',')))
-    flood_filled_image = flood_fill(image, seed_point=(seedPoint), new_value=newValue)
-    LoadPhoto(flood_filled_image)
-
+    try:
+        seedPoint = tuple(map(int, seedPoint.split(',')))
+        flood_filled_image = flood_fill(image, seed_point=(seedPoint), new_value=newValue)
+        LoadPhoto(flood_filled_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def BlackTopHat():
-    black_tophat_image = black_tophat(image)
-    LoadPhoto(black_tophat_image)
-
+    try:
+        black_tophat_image = black_tophat(image)
+        LoadPhoto(black_tophat_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def WhiteTopHat():
-    white_tophat_image = white_tophat(image)
-    LoadPhoto(white_tophat_image)
-
+    try:
+        white_tophat_image = white_tophat(image)
+        LoadPhoto(white_tophat_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def Dilation():
-    dilation_image = dilation(image)
-    LoadPhoto(dilation_image)
-
+    try:
+        dilation_image = dilation(image)
+        LoadPhoto(dilation_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def Resize(height, width):
-    resized_image = resize(image, (int(height), int(width)))
-    LoadPhoto(resized_image, int(height), int(width))
-    print(resized_image.shape)
-
+    try:
+        resized_image = resize(image, (int(height), int(width)))
+        LoadPhoto(resized_image, int(height), int(width))
+        print(resized_image.shape)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def Rotate(angle):
-    rotated_image = rotate(image, float(angle))
-    LoadPhoto(rotated_image)
-
+    try:
+        rotated_image = rotate(image, float(angle))
+        LoadPhoto(rotated_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def Swirl(rotation, strength, radius):
-    swirled_image = swirl(image, rotation=float(rotation), strength=float(strength), radius=float(radius))
-    LoadPhoto(swirled_image)
-
+    try:
+        swirled_image = swirl(image, rotation=float(rotation), strength=float(strength), radius=float(radius))
+        LoadPhoto(swirled_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def Rescale(scale):
-    rescaled_image = rescale(image, scale=float(scale))
-    LoadPhoto(rescaled_image)
-
+    try:
+        rescaled_image = rescale(image, scale=float(scale))
+        LoadPhoto(rescaled_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def PyramidReduce(downscale):
-    pyramid_reduced_image = pyramid_reduce(image, downscale=float(downscale))
-    LoadPhoto(pyramid_reduced_image)
-
+    try:
+        pyramid_reduced_image = pyramid_reduce(image, downscale=float(downscale))
+        LoadPhoto(pyramid_reduced_image)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def Histogram():
-    thresh = threshold_otsu(image)
-    LoadPhoto(image, type="Histogram", thresh=str(thresh))
-
+    try:
+        thresh = threshold_otsu(image)
+        LoadPhoto(image, type="Histogram", thresh=str(thresh))
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def Threshold():
-    thresh = threshold_otsu(image)
-    binary = image > thresh
-    LoadPhoto(binary, type="Threshold")
-
+    try:
+        thresh = threshold_otsu(image)
+        binary = image > thresh
+        LoadPhoto(binary, type="Threshold")
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def RescaleIntensity(inRange, outRange):
-    inRange = tuple(map(int, inRange.split(',')))
-    outRange = tuple(map(int, outRange.split(',')))
-    rescaled_intensity = rescale_intensity(image, in_range=inRange, out_range=outRange)
-    LoadPhoto(rescaled_intensity)
-
+    try:
+        inRange = tuple(map(int, inRange.split(',')))
+        outRange = tuple(map(int, outRange.split(',')))
+        rescaled_intensity = rescale_intensity(image, in_range=inRange, out_range=outRange)
+        LoadPhoto(rescaled_intensity)
+    except:
+        messagebox.showerror("Error", "An error has occured.")
 
 def ReplaceGrid(buttonArray):
     for widget in root.winfo_children():
